@@ -1,8 +1,0 @@
-#Sample Playbook which downlaods a file into my cmputer
-- hosts: localhost
-- connection: local
-  tasks:
-    - name: Download a file from the internet
-      get_url:
-        url: https://www.example.com/samplefile.txt
-        dest: /tmp/samplefile.txt
