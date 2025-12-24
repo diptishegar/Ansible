@@ -1,0 +1,67 @@
+- name: Install and Configure Nginx
+  hosts: webservers
+  vars:
+    packages:
+      - nginx
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+      become: true
+    
+    - name: Ensure Nginx is enabled on boot
+      service:
+        name: nginx
+        enabled: yes
+      become: true
+
+    - name: Ensure the ssl directory exists
+      file:
+        path: /etc/nginx/ssl
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+      become: true
+
+    - name: Add the SSL/TLS certificate
+      copy:
+        src: "../creds/{{ item }}"
+        dest: "/etc/nginx/ssl/{{ item }}"
+        mode: '0600'
+      loop:
+        - 'cert.pem'
+        - 'private-key.pem'
+      notify: Reload Nginx
+      become: true
+    
+    - name: Configure the Nginx sites-available
+      copy:
+        src: "./nginx-conf/{{ item }}"
+        dest: "/etc/nginx/sites-available/{{ item }}"
+      loop:
+        - 'dssinfo.xyz'
+        - 'http-redirect'
+      notify: Reload Nginx
+      become: true
+    
+    - name: Enable Nginx site by creating symlink
+      file:
+        src: "/etc/nginx/sites-available/{{ item }}"
+        dest: "/etc/nginx/sites-enabled/{{ item }}"
+        state: link
+      loop:
+        - 'dssinfo.xyz'
+        - 'http-redirect'
+      notify: Reload Nginx
+      become: true
+
+  handlers:
+      - name: Reload Nginx
+        command: nginx -t && systemctl reload nginx
+        become: true
+
+
